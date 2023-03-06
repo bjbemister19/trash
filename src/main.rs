@@ -1,16 +1,11 @@
-use clap::{command, value_parser, Arg, ArgAction};
+mod args;
+mod mv;
 
-use std::env;
 use std::fs;
 use std::path::Path;
 
-#[derive(Debug)]
-struct Args {
-    files: Vec<String>,
-    empty: bool,
-    home: String,
-    trash_dir: String,
-}
+use args::Args;
+use mv::Move;
 
 fn make_absolute(cwd: &str, path: &str) -> String {
     String::from(
@@ -31,59 +26,34 @@ fn gen_new_name(path: &str, current_time_unix: u64) -> String {
     format!("v1-{}-{}", current_time_unix, current_filename)
 }
 
-fn get_args() -> Args {
-    let matches = command!() // requires `cargo` feature
-        .arg(Arg::new("empty").long("empty").required(false))
-        .arg(
-            Arg::new("files")
-                .action(ArgAction::Append)
-                .value_parser(value_parser!(String)),
-        )
-        .get_matches();
+fn gen_out_path(src: &str, trash_dir: &str, current_time_unix: u64) -> String {
+    make_absolute(trash_dir, &gen_new_name(src, current_time_unix))
+}
 
-    let cwd = env::var("PWD").expect("Cannot find current directory");
-    let files: Vec<String> = matches
-        .get_many("files")
-        .expect("expected files to delete")
-        .cloned::<String>()
+fn get_files(args: &Args) -> Vec<Move> {
+    let cwd = Args::cwd();
+    let trash_dir = Args::trash_dir();
+    args.files()
+        .iter()
         .map(|path| make_absolute(&cwd, &path))
-        .collect();
-
-    let home = env::var("HOME").ok().expect("Cannot find home directory");
-    let trash_dir = String::from(Path::new(&home).join(".rtrash").to_str().expect("ulghh"));
-    return Args {
-        files: files,
-        empty: matches.contains_id("empty"),
-        home: home,
-        trash_dir: trash_dir,
-    };
-}
-
-fn move_file_to_trash(args: &Args, src: &str) {
-    let dest = make_absolute(&args.trash_dir, &gen_new_name(src, 1));
-    println!("{}", dest)
-}
-
-fn move_files_to_trash(args: &Args) {
-    for src_path in &args.files {
-        move_file_to_trash(args, &src_path)
-    }
+        .map(|src| {
+            let dest = gen_out_path(&src, &trash_dir, 1);
+            Move::new(&src, &dest)
+        })
+        .collect()
 }
 
 fn init_trash(args: &Args) {
-    fs::create_dir_all(args.trash_dir.clone()).unwrap();
+    fs::create_dir_all(Args::trash_dir()).unwrap();
 }
 
 fn main() {
-    let args = get_args();
-    println!("{:?}", args);
-
+    let args = Args::parse();
     init_trash(&args);
-    if args.empty {
-        unimplemented!()
-    } else {
-        move_files_to_trash(&args);
-    }
+
+    let files_to_move = get_files(&args);
+    let moved: Vec<Option<&Move>> = files_to_move.iter().map(|file| file.exec()).collect();
+    print!("{:?}", moved);
 }
 
 #[cfg(test)]
