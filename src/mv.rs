@@ -13,8 +13,11 @@ impl Move {
     }
 
     pub fn exec(&self) -> Option<&Move> {
-        // println!("Moving: {:?}", self);
-        // TODO: Actually move files
+        todo!("implement exec");
+    }
+
+    pub fn dry_run(&self) -> Option<&Move> {
+        println!("Moving to trash: {:?}", self.src);
         Some(&self)
     }
 }

@@ -1,10 +1,11 @@
-mod args;
+mod cmd;
+mod environment;
 mod mv;
 
 use std::fs;
 use std::path::Path;
 
-use args::Args;
+use cmd::{Cmd, RemoveArgs};
 use mv::Move;
 
 fn make_absolute(cwd: &str, path: &str) -> String {
@@ -30,9 +31,9 @@ fn gen_out_path(src: &str, trash_dir: &str, current_time_unix: u64) -> String {
     make_absolute(trash_dir, &gen_new_name(src, current_time_unix))
 }
 
-fn get_files(args: &Args) -> Vec<Move> {
-    let cwd = Args::cwd();
-    let trash_dir = Args::trash_dir();
+fn get_files(args: &RemoveArgs) -> Vec<Move> {
+    let cwd = environment::cwd();
+    let trash_dir = environment::trash_dir();
     args.files()
         .iter()
         .map(|path| make_absolute(&cwd, &path))
@@ -43,17 +44,35 @@ fn get_files(args: &Args) -> Vec<Move> {
         .collect()
 }
 
-fn init_trash(args: &Args) {
-    fs::create_dir_all(Args::trash_dir()).unwrap();
+fn init_trash() {
+    fs::create_dir_all(environment::trash_dir()).unwrap();
 }
 
 fn main() {
-    let args = Args::parse();
-    init_trash(&args);
+    init_trash();
 
-    let files_to_move = get_files(&args);
-    let moved: Vec<Option<&Move>> = files_to_move.iter().map(|file| file.exec()).collect();
-    print!("{:?}", moved);
+    let cmd = Cmd::parse();
+    // dbg!(&cmd);
+
+    match cmd {
+        Cmd::Remove { args } => {
+            let files_to_move = get_files(&args);
+            let moved: Vec<Option<&Move>> = files_to_move
+                .iter()
+                .map(|file| {
+                    if args.dry_run() {
+                        file.dry_run()
+                    } else {
+                        file.exec()
+                    }
+                })
+                .collect();
+            // TODO Update history
+        }
+        Cmd::Empty { args: _ } => {
+            todo!("Empty NYI")
+        }
+    }
 }
 
 #[cfg(test)]
