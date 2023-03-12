@@ -1,11 +1,13 @@
 mod cmd;
 mod environment;
+mod history;
 mod mv;
 
 use std::fs;
 use std::path::Path;
 
 use cmd::{Cmd, RemoveArgs};
+use history::{Command, History};
 use mv::Move;
 
 fn make_absolute(cwd: &str, path: &str) -> String {
@@ -53,6 +55,8 @@ fn main() {
 
     let cmd = Cmd::parse();
     // dbg!(&cmd);
+    let mut hist = History::load()
+        .expect("Fatal Error: Failed to load history file");
 
     match cmd {
         Cmd::Remove { args } => {
@@ -68,6 +72,14 @@ fn main() {
                 })
                 .collect();
             // TODO Update history
+            let mut c = Command::new();
+            for maybe_moved in moved {
+                if let Some(mv) = maybe_moved{
+                    c.add_file(mv.clone());
+                }
+            }
+            hist.add_command(c);
+            hist.save().unwrap();
         }
         Cmd::Empty { args: _ } => {
             todo!("Empty NYI")
@@ -76,7 +88,7 @@ fn main() {
 }
 
 #[cfg(test)]
-mod tests {
+mod main_tests {
     use super::*;
 
     #[test]

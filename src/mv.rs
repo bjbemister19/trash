@@ -1,4 +1,6 @@
-#[derive(Debug)]
+use serde_derive::{Deserialize, Serialize};
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Move {
     pub src: String,
     pub dest: String,
