@@ -4,7 +4,6 @@ use crate::mv::Move;
 use std::fs;
 use std::path::Path;
 
-use serde::de::Error;
 use serde_derive::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -84,7 +83,7 @@ mod history_tests {
     use super::*;
 
     #[test]
-    fn varify_path() {
+    fn verify_path() {
         assert_eq!("/Users/tristen/.rtrash/.history", History::path());
     }
 

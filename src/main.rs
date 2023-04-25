@@ -2,6 +2,7 @@ mod cmd;
 mod environment;
 mod history;
 mod mv;
+mod mtab_parser;
 
 use std::fs;
 use std::path::Path;
