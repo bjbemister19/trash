@@ -1,8 +1,10 @@
 mod cmd;
 mod environment;
 mod history;
-mod mv;
 mod mtab_parser;
+mod mv;
+mod os;
+mod trash_dir;
 
 use std::fs;
 use std::path::Path;
@@ -10,6 +12,7 @@ use std::path::Path;
 use cmd::{Cmd, RemoveArgs};
 use history::{Command, History};
 use mv::Move;
+use trash_dir::trash_dir;
 
 fn make_absolute(cwd: &str, path: &str) -> String {
     String::from(
@@ -30,25 +33,29 @@ fn gen_new_name(path: &str, current_time_unix: u64) -> String {
     format!("v1-{}-{}", current_time_unix, current_filename)
 }
 
-fn gen_out_path(src: &str, trash_dir: &str, current_time_unix: u64) -> String {
-    make_absolute(trash_dir, &gen_new_name(src, current_time_unix))
+fn gen_out_path(src: &str, current_time_unix: u64) -> String {
+    let trash = trash_dir(src);
+    if trash.is_some() {
+        make_absolute(&trash.unwrap(), &gen_new_name(src, current_time_unix))
+    } else {
+        panic!("Could not find trash dir");
+    }
 }
 
 fn get_files(args: &RemoveArgs) -> Vec<Move> {
     let cwd = environment::cwd();
-    let trash_dir = environment::trash_dir();
     args.files()
         .iter()
         .map(|path| make_absolute(&cwd, &path))
         .map(|src| {
-            let dest = gen_out_path(&src, &trash_dir, 1);
+            let dest = gen_out_path(&src, 1);
             Move::new(&src, &dest)
         })
         .collect()
 }
 
 fn init_trash() {
-    fs::create_dir_all(environment::trash_dir()).unwrap();
+    fs::create_dir_all(environment::trash_file_dir()).unwrap();
 }
 
 fn main() {
@@ -56,8 +63,7 @@ fn main() {
 
     let cmd = Cmd::parse();
     // dbg!(&cmd);
-    let mut hist = History::load()
-        .expect("Fatal Error: Failed to load history file");
+    let mut hist = History::load().expect("Fatal Error: Failed to load history file");
 
     match cmd {
         Cmd::Remove { args } => {
@@ -75,7 +81,7 @@ fn main() {
             // TODO Update history
             let mut c = Command::new();
             for maybe_moved in moved {
-                if let Some(mv) = maybe_moved{
+                if let Some(mv) = maybe_moved {
                     c.add_file(mv.clone());
                 }
             }

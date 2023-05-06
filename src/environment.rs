@@ -9,7 +9,7 @@ pub fn home_dir() -> String {
     env::var("HOME").ok().expect("Cannot find home directory")
 }
 
-pub fn trash_dir() -> String {
+pub fn trash_file_dir() -> String {
     let home = home_dir();
     String::from(Path::new(&home).join(".rtrash").to_str().expect("ulghh"))
 }

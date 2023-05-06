@@ -8,6 +8,8 @@ pub struct MountedDrive {
     pub options: String,
 }
 
+pub static MTAB_PATH: &str = "/etc/mtab";
+
 pub fn parse_mtab_file(file_path: &str) -> Result<Vec<MountedDrive>, Box<dyn std::error::Error>> {
     let file = File::open(file_path)?;
     let reader = BufReader::new(file);
@@ -46,51 +48,53 @@ mod tests {
 
     #[test]
     fn test_parse_mtab_file() {
-        let file_path = "test_mtab";
-        let mut file = File::create(file_path).unwrap();
-        file.write_all(b"/dev/sda1 /mnt/ext4 ext4 rw,relatime 0 0\n").unwrap();
-        file.write_all(b"tmpfs /mnt/tmpfs tmpfs rw,relatime 0 0\n").unwrap();
+        let test_file = "test_parse_mtab_file";
+        let mut file = File::create(test_file).unwrap();
+        file.write_all(b"/dev/sda1 /mnt/ext4 ext4 rw,relatime 0 0\n")
+            .unwrap();
+        file.write_all(b"tmpfs /mnt/tmpfs tmpfs rw,relatime 0 0\n")
+            .unwrap();
         file.sync_all().unwrap();
 
-        let mounted_drives = parse_mtab_file(file_path).unwrap();
+        let mounted_drives = parse_mtab_file(test_file).unwrap();
         assert_eq!(mounted_drives.len(), 2);
 
-        std::fs::remove_file(file_path).unwrap();
+        std::fs::remove_file(test_file).unwrap();
     }
 
     #[test]
     fn test_parse_mtab_file_nonexistent_file() {
-        let file_path = "nonexistent_file";
-        let result = parse_mtab_file(file_path);
+        let test_file = "test_parse_mtab_file_nonexistent_file";
+        let result = parse_mtab_file(test_file);
         assert!(result.is_err()); // Assert that the result is an error
     }
 
     #[test]
     fn test_parse_mtab_file_empty_file() {
-        let file_path = "empty_mtab";
-        let file = File::create(file_path).unwrap();
+        let test_file = "test_parse_mtab_file_empty_file";
+        let file = File::create(test_file).unwrap();
         file.sync_all().unwrap();
 
-        let mounted_drives = parse_mtab_file(file_path).unwrap();
+        let mounted_drives = parse_mtab_file(test_file).unwrap();
         assert_eq!(mounted_drives.len(), 0);
 
-        std::fs::remove_file(file_path).unwrap();
+        std::fs::remove_file(test_file).unwrap();
     }
 
     #[test]
-    fn test_parse_mtab_file_ignore_comments() -> Result<(), Box<dyn std::error::Error>> {
-        let file_path = "test_mtab";
-        let mut file = File::create(file_path)?;
-        file.write_all(b"/dev/sda1 /mnt/ext4 ext4 rw,relatime 0 0\n")?;
-        file.write_all(b"# This is a comment\n")?;
-        file.write_all(b"tmpfs /mnt/tmpfs tmpfs rw,relatime 0 0\n")?;
-        file.sync_all()?;
+    fn test_parse_mtab_file_ignore_comments() {
+        let test_file = "test_parse_mtab_file_ignore_comments";
+        let mut file = File::create(test_file).unwrap();
+        file.write_all(b"/dev/sda1 /mnt/ext4 ext4 rw,relatime 0 0\n")
+            .unwrap();
+        file.write_all(b"# This is a comment\n").unwrap();
+        file.write_all(b"tmpfs /mnt/tmpfs tmpfs rw,relatime 0 0\n")
+            .unwrap();
+        file.sync_all().unwrap();
 
-        let mounted_drives = parse_mtab_file(file_path)?;
+        let mounted_drives = parse_mtab_file(test_file).unwrap();
         assert_eq!(mounted_drives.len(), 2);
 
-        std::fs::remove_file(file_path)?;
-
-        Ok(())
+        std::fs::remove_file(test_file).unwrap();
     }
 }

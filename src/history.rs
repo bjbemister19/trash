@@ -13,9 +13,7 @@ pub struct Command {
 
 impl Command {
     pub fn new() -> Command {
-        Command {
-            files: Vec::new()
-        }
+        Command { files: Vec::new() }
     }
 
     pub fn add_file(&mut self, file: Move) {
@@ -31,7 +29,7 @@ pub struct History {
 impl History {
     fn path() -> String {
         String::from(
-            Path::new(&environment::trash_dir())
+            Path::new(&environment::trash_file_dir())
                 .join(".history")
                 .to_str()
                 .expect("Could not join paths"),
