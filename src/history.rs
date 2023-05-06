@@ -6,6 +6,8 @@ use std::path::Path;
 
 use serde_derive::{Deserialize, Serialize};
 
+const HIST_FILE_NAME: &str = ".history";
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Command {
     files: Vec<Move>,
@@ -30,7 +32,7 @@ impl History {
     fn path() -> String {
         String::from(
             Path::new(&environment::trash_file_dir())
-                .join(".history")
+                .join(HIST_FILE_NAME)
                 .to_str()
                 .expect("Could not join paths"),
         )
@@ -82,7 +84,9 @@ mod history_tests {
 
     #[test]
     fn verify_path() {
-        assert_eq!("/Users/tristen/.rtrash/.history", History::path());
+        let home_dir = std::env::var("HOME").ok().expect("Cannot find home directory");
+        let expected_path = home_dir + "/.rtrash/" +  HIST_FILE_NAME;
+        assert_eq!(expected_path, History::path());
     }
 
     #[test]
