@@ -19,7 +19,7 @@ impl Move {
     }
 
     pub fn dry_run(&self) -> Option<&Move> {
-        println!("Moving to trash: {:?}", self.src);
+        println!("Moving: src:{:?} dest:{:?}", self.src, self.dest);
         Some(&self)
     }
 }

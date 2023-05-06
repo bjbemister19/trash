@@ -30,12 +30,12 @@ pub fn trash_dir(file: &str) -> Option<String> {
 }
 
 mod tests {
-    use super::*;
-    use std::fs::File;
-    use std::io::prelude::*;
-
     #[test]
-    fn test_mounted_drives_works(){
+    fn test_mounted_drives_works(){    
+        use super::*;
+        use std::fs::File;
+        use std::io::prelude::*;
+        
         let file_path = "test_mounted_drives_works";
         let mut file = File::create(file_path).unwrap();
         file.write_all(b"/dev/sda1 /mnt/ext4 ext4 rw,relatime 0 0\n")
