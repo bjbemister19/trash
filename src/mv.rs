@@ -1,4 +1,5 @@
 use serde_derive::{Deserialize, Serialize};
+use std::fs;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Move {
@@ -15,7 +16,8 @@ impl Move {
     }
 
     pub fn exec(&self) -> Option<&Move> {
-        todo!("implement exec");
+        fs::rename(&self.src, &self.dest).ok()?;
+        Some(&self)
     }
 
     pub fn dry_run(&self) -> Option<&Move> {

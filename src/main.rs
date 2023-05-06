@@ -6,10 +6,11 @@ mod mv;
 mod os;
 mod trash_dir;
 
-use std::fs;
+use std::{fs};
 use std::path::Path;
+use std::io;
 
-use cmd::{Cmd, RemoveArgs};
+use cmd::{Cmd, RemoveArgs, EmptyArgs};
 use history::{Command, History};
 use mv::Move;
 use trash_dir::trash_dir;
@@ -58,6 +59,47 @@ fn init_trash() {
     fs::create_dir_all(environment::trash_file_dir()).unwrap();
 }
 
+fn remove(args: RemoveArgs, hist: &mut History){
+    let files_to_move = get_files(&args);
+    let moved: Vec<Option<&Move>> = files_to_move
+        .iter()
+        .map(|file| {
+            if args.dry_run() {
+                file.dry_run()
+            } else {
+                file.exec()
+            }
+        })
+        .collect();
+    // TODO Update history
+    let mut c = Command::new();
+    for maybe_moved in moved {
+        if let Some(mv) = maybe_moved {
+            c.add_file(mv.clone());
+        }
+    }
+    hist.add_command(c);
+    hist.save().unwrap();
+}
+
+fn empty(_args: EmptyArgs) {
+    let directory = fs::read_dir(environment::trash_file_dir()).unwrap()
+        .map(|res| res.map(|e| e.path()))
+        .collect::<Result<Vec<_>, io::Error>>().ok().unwrap();
+
+    for path in directory {
+        if path.to_str().unwrap() == History::path() {
+            continue;
+        }
+
+        if path.is_file() {
+            fs::remove_file(path).ok().unwrap()
+        } else {
+            fs::remove_dir_all(path).ok().unwrap()
+        }
+    }
+}
+
 fn main() {
     init_trash();
 
@@ -67,29 +109,10 @@ fn main() {
 
     match cmd {
         Cmd::Remove { args } => {
-            let files_to_move = get_files(&args);
-            let moved: Vec<Option<&Move>> = files_to_move
-                .iter()
-                .map(|file| {
-                    if args.dry_run() {
-                        file.dry_run()
-                    } else {
-                        file.exec()
-                    }
-                })
-                .collect();
-            // TODO Update history
-            let mut c = Command::new();
-            for maybe_moved in moved {
-                if let Some(mv) = maybe_moved {
-                    c.add_file(mv.clone());
-                }
-            }
-            hist.add_command(c);
-            hist.save().unwrap();
+            remove(args, &mut hist)
         }
-        Cmd::Empty { args: _ } => {
-            todo!("Empty NYI")
+        Cmd::Empty { args } => {
+            empty(args);
         }
     }
 }

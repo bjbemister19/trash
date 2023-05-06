@@ -29,7 +29,7 @@ pub struct History {
 }
 
 impl History {
-    fn path() -> String {
+    pub fn path() -> String {
         String::from(
             Path::new(&environment::trash_file_dir())
                 .join(HIST_FILE_NAME)
